@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-width=1.0">
+    <title>AI API Integrator</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <header>
+        <h1>AI API Integrator</h1>
+        <button id="similarity-measure" onclick="openSimilarityMeasure()">Similarity Measure</button>
+    </header>
+    <main>
+        <div class="api-column" id="api1-column">
+            <button class="expand-button" onclick="expandColumn('api1')">
+                <span class="icon">&#9776;</span>
+            </button>
+            <h2 class="api-heading">Llama 3</h2>
+            <div class="input-container">
+                <input type="text" id="api1-key" placeholder="Enter API Key for Llama 3">
+                <button onclick="submitApiKey('api1')" id="api1-tick" class="tick-button">&#10003;</button>
+            </div>
+            <div class="output-box" id="api1-output"></div>
+        </div>
+        <div class="api-column" id="api3-column">
+            <button class="expand-button" onclick="expandColumn('api3')">
+                <span class="icon">&#9776;</span>
+            </button>
+            <h2 class="api-heading">Gemini</h2>
+            <div class="input-container">
+                <input type="text" id="api3-key" placeholder="Enter API Key for Gemini">
+                <button onclick="submitApiKey('api3')" id="api3-tick" class="tick-button">&#10003;</button>
+            </div>
+            <div class="output-box" id="api3-output"></div>
+        </div>
+        <div class="api-column" id="api4-column">
+            <button class="expand-button" onclick="expandColumn('api4')">
+                <span class="icon">&#9776;</span>
+            </button>
+            <h2 class="api-heading">Cohere</h2>
+            <div class="input-container">
+                <input type="text" id="api4-key" placeholder="Enter API Key for Cohere">
+                <button onclick="submitApiKey('api4')" id="api4-tick" class="tick-button">&#10003;</button>
+            </div>
+            <div class="output-box" id="api4-output"></div>
+        </div>
+    </main>
+    <footer>
+        <div class="prompt-section">
+            <div class="input-container">
+                <select id="api-select" class="small-dropdown">
+                    <option value="all">All APIs</option>
+                    <option value="api1">Llama 3</option>
+                    <option value="api3">Gemini</option>
+                    <option value="api4">Cohere</option>
+                </select>
+                <textarea id="prompt" placeholder="Enter your prompt here" class="big-textarea" onkeydown="handleKeyDown(event)"></textarea>
+                <button onclick="submitPrompt()" class="send-button">Send</button>
+            </div>
+        </div>
+    </footer>
+    <div id="overlay" class="overlay" onclick="closeOverlay()">
+        <div class="prompt-section overlay-prompt">
+            <div class="input-container">
+                <select id="overlay-api-select" class="small-dropdown">
+                    <option value="all">All APIs</option>
+                    <option value="api1">Llama 3</option>
+                    <option value="api3">Gemini</option>
+                    <option value="api4">Cohere</option>
+                </select>
+                <textarea id="overlay-prompt" placeholder="Enter your prompt here" class="big-textarea" onkeydown="handleKeyDown(event)"></textarea>
+                <button onclick="submitPrompt()" class="send-button">Send</button>
+            </div>
+        </div>
+    </div>
+    <div id="similarity-overlay" class="overlay" onclick="closeSimilarityMeasure()">
+        <div class="similarity-container">
+            <canvas id="similarityChart"></canvas>
+        </div>
+    </div>
+    <script>
+        async function submitApiKey(api) {
+            const key = document.getElementById(`${api}-key`).value;
+            const response = await fetch(`/submit_api_key/${api}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ key })
+            });
+            if (response.ok) {
+                const tickButton = document.getElementById(`${api}-tick`);
+                tickButton.style.color = 'black';
+                tickButton.style.backgroundColor = 'green';
+            }
+        }
+
+        async function submitPrompt() {
+            const apiSelect = document.getElementById('api-select').value;
+            const prompt = document.getElementById('prompt').value;
+            const response = await fetch('/submit_prompt', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ apiSelect, prompt })
+            });
+            const data = await response.json();
+            document.getElementById('api1-output').innerText = data.api1 || '';
+            document.getElementById('api3-output').innerText = data.api3 || '';
+            document.getElementById('api4-output').innerText = data.api4 || '';
+        }
+
+        function handleKeyDown(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                submitPrompt();
+            }
+        }
+
+        function expandColumn(api) {
+            const column = document.getElementById(`${api}-column`);
+            const overlay = document.getElementById('overlay');
+            column.classList.add('expanded');
+            overlay.style.display = 'flex';
+        }
+
+        function closeOverlay() {
+            const columns = document.querySelectorAll('.api-column');
+            columns.forEach(column => column.classList.remove('expanded'));
+            const overlay = document.getElementById('overlay');
+            overlay.style.display = 'none';
+        }
+
+        function openSimilarityMeasure() {
+            const similarityOverlay = document.getElementById('similarity-overlay');
+            similarityOverlay.style.display = 'flex';
+            fetch('/similarity_measure')
+                .then(response => response.json())
+                .then(data => {
+                    const ctx = document.getElementById('similarityChart').getContext('2d');
+                    new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: ['Llama 3', 'Gemini', 'Cohere'],
+                            datasets: [{
+                                label: 'Similarity Measure',
+                                data: [data.api1, data.api3, data.api4],
+                                backgroundColor: [
+                                    'rgba(255, 99, 132, 0.2)',
+                                    'rgba(54, 162, 235, 0.2)',
+                                    'rgba(75, 192, 192, 0.2)'
+                                ],
+                                borderColor: [
+                                    'rgba(255, 99, 132, 1)',
+                                    'rgba(54, 162, 235, 1)',
+                                    'rgba(75, 192, 192, 1)'
+                                ],
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            scales: {
+                                y: {
+                                    beginAtZero: true
+                                }
+                            }
+                        }
+                    });
+                });
+        }
+
+        function closeSimilarityMeasure() {
+            const similarityOverlay = document.getElementById('similarity-overlay');
+            similarityOverlay.style.display = 'none';
+        }
+    </script>
+</body>
+</html>
