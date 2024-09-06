@@ -66,7 +66,10 @@ main {
     width: 29%;
     position: relative;
     transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
 }
+
 
 .api-column.expanded {
     position: fixed;
@@ -126,10 +129,12 @@ input {
     border: 1px solid #444;
     border-radius: 4px;
     background-color: #2a2a2a;
-    min-height: 100px;
-    max-height: 200px; 
+    min-height: 200px;
+    max-height: 390px; 
     overflow-y: auto;
     position: relative;
+    flex: 1;
+    margin-bottom: 20px; /* Add some gap below the output box */
 }
 
 .copy-button {
